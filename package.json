@@ -5,7 +5,8 @@
   "scripts": {
     "start": "npm run build:live",
     "build": "tsc -p .",
-    "build:live": "nodemon --watch 'src/**/*.ts' --exec \"ts-node\" src/index.ts"
+    "build:live": "nodemon --watch 'src/**/*.ts' --exec \"ts-node\" src/index.ts",
+    "test": "jest"
   },
   "keywords": [],
   "author": "u-koma",
@@ -13,8 +14,11 @@
   "description": "",
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
+    "@types/jest": "^29.5.13",
     "@types/node": "^22.7.5",
+    "jest": "^29.7.0",
     "nodemon": "^3.1.7",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   },
