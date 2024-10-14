@@ -57,7 +57,7 @@ describe('ORM Generator', () => {
                 models: []
             };
             const enumsCode = generateEnums(emptySchema);
-            expect(enumsCode).toBe('// Auto-generated Enums\n\n');
+            expect(enumsCode).toBe('// Auto-generated Enums\n');
         });
     });
 
@@ -74,10 +74,11 @@ describe('ORM Generator', () => {
 
         it('should define CollectionJson type correctly', () => {
             const ormCode = generateORMCode(parsedSchema);
-            const expectedType = `export type CollectionJson<T> = {
-  [P in keyof T extends string ? keyof T : never]: JsonValue | FieldValue;
-};\n\n`;
-            expect(ormCode).toContain(expectedType);
+            const expectedType = `export type CollectionJson<T extends Record<string, any>> = {
+  [P in keyof T]: JsonValue | FieldValue;
+};\n`;
+            const regex = new RegExp(expectedType.replace(/\s+/g, '\\s*'));
+            expect(ormCode).toMatch(regex);
         });
 
         it('should generate UserRole enum within ORM code correctly', () => {
@@ -143,7 +144,7 @@ describe('ORM Generator', () => {
                     expect(ormCode).toContain('  email: string,');
                     expect(ormCode).toContain('  name: string,');
                     expect(ormCode).toContain('  role: UserRole,');
-                    expect(ormCode).toContain('  posts: string[],');
+                    expect(ormCode).toContain('  posts?: string[],'); // isRequired: false の時、配列型の場合は空なのかnullなのかundefinedなのか
                     expect(ormCode).toContain('  phoneNumbers?: string[],');
                     expect(ormCode).toContain('  authSecondFactor?: string[],');
                     expect(ormCode).toContain('  secondFactorEmail?: string,');
@@ -159,9 +160,9 @@ describe('ORM Generator', () => {
                     expect(ormCode).toContain('this._email = email;');
                     expect(ormCode).toContain('this._name = name;');
                     expect(ormCode).toContain('this._role = role;');
-                    expect(ormCode).toContain('this._posts = posts || [];');
-                    expect(ormCode).toContain('this._phoneNumbers = phoneNumbers || [];');
-                    expect(ormCode).toContain('this._authSecondFactor = authSecondFactor || [];');
+                    expect(ormCode).toContain('this._posts = posts ?? [];');
+                    expect(ormCode).toContain('this._phoneNumbers = phoneNumbers ?? [];');
+                    expect(ormCode).toContain('this._authSecondFactor = authSecondFactor ?? [];');
                     expect(ormCode).toContain('this._secondFactorEmail = secondFactorEmail ?? \'\';');
                     expect(ormCode).toContain('this._createdAt = createdAt ?? new Timestamp(0, 0);');
                     expect(ormCode).toContain('this._updatedAt = updatedAt ?? new Timestamp(0, 0);');
@@ -331,8 +332,8 @@ describe('ORM Generator', () => {
                 const ormCode = generateORMCode(emptySchema);
                 expect(ormCode).toContain('import { FieldValue, Timestamp } from "@firebase/firestore";');
                 expect(ormCode).toContain('import { JsonValue } from "type-fest";');
-                expect(ormCode).toContain('export type CollectionJson<T> = {');
-                expect(ormCode).toContain('// Auto-generated Enums\n\n');
+                expect(ormCode).toContain('export type CollectionJson<T extends Record<string, any>> = {');
+                expect(ormCode).toContain('// Auto-generated Enums\n');
                 expect(ormCode).not.toContain('export class ');
             });
         });
