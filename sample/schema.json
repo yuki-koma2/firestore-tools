@@ -1,0 +1,38 @@
+{
+  "enums": {
+    "UserRole": ["ADMIN", "GENERAL", "OPERATOR", "MANAGER", "ACCOUNTING"],
+    "ServiceType": [
+      "FACILITY",
+      "EMPTY"
+    ],
+    "PostStatus": ["DRAFT", "PUBLISHED", "ARCHIVED"]
+  },
+  "models": {
+    "User": {
+      "fields": [
+        { "name": "id", "type": "String", "isRequired": true, "isUnique": true, "default": "uuid()" },
+        { "name": "email", "type": "String", "isRequired": true, "isUnique": true },
+        { "name": "name", "type": "String", "isRequired": true, "maxLength": 100 },
+        { "name": "role", "type": "UserRole", "isRequired": true },
+        { "name": "posts", "type": "Post", "isList": true, "isRelation": true },
+        { "name": "phoneNumbers", "type": "String", "isList": true, "isOptional": true },
+        { "name": "authSecondFactor", "type": "String", "isList": true, "isOptional": true },
+        { "name": "secondFactorEmail", "type": "String", "isOptional": true },
+        { "name": "createdAt", "type": "DateTime", "isReadOnly": true, "default": "now()" },
+        { "name": "updatedAt", "type": "DateTime", "isUpdatedAt": true }
+      ]
+    },
+    "Post": {
+      "fields": [
+        { "name": "id", "type": "String", "isRequired": true, "isUnique": true, "default": "uuid()" },
+        { "name": "title", "type": "String", "isRequired": true, "maxLength": 200 },
+        { "name": "content", "type": "String", "isRequired": true },
+        { "name": "status", "type": "PostStatus", "isRequired": true },
+        { "name": "authorId", "type": "String", "isRequired": true },
+        { "name": "author", "type": "User", "isRelation": true },
+        { "name": "createdAt", "type": "DateTime", "isReadOnly": true, "default": "now()" },
+        { "name": "updatedAt", "type": "DateTime", "isUpdatedAt": true }
+      ]
+    }
+  }
+}
