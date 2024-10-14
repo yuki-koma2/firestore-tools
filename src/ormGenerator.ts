@@ -98,8 +98,8 @@ export function generateORMCode(schema: Schema): string {
         `// Auto-generated ORM models`,
         `import { FieldValue, Timestamp } from "@firebase/firestore";`,
         `import { JsonValue } from "type-fest";\n`,
-        `export type CollectionJson<T> = {`,
-        `  [P in keyof T extends string ? keyof T : never]: JsonValue | FieldValue;`,
+        `export type CollectionJson<T extends Record<string, any>> = {`,
+        `   [P in keyof T]: JsonValue | FieldValue;`,
         `};\n`,
         generateEnums(schema),
     ];
