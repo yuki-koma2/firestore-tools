@@ -28,7 +28,8 @@ models:
       - name: name
         type: String
         isRequired: true
-        maxLength: 100
+        constraints:
+          maxLength: 100
       - name: role
         type: UserRole
         isRequired: true
@@ -36,17 +37,18 @@ models:
         type: Post
         isList: true
         isRelation: true
+        relationModel: Post
       - name: phoneNumbers
         type: String
         isList: true
-        isOptional: true
+        isRequired: false
       - name: authSecondFactor
         type: String
         isList: true
-        isOptional: true
+        isRequired: false
       - name: secondFactorEmail
         type: String
-        isOptional: true
+        isRequired: false
       - name: createdAt
         type: DateTime
         isReadOnly: true
@@ -54,6 +56,7 @@ models:
       - name: updatedAt
         type: DateTime
         isUpdatedAt: true
+
   Post:
     fields:
       - name: id
@@ -64,7 +67,8 @@ models:
       - name: title
         type: String
         isRequired: true
-        maxLength: 200
+        constraints:
+          maxLength: 200
       - name: content
         type: String
         isRequired: true
@@ -77,6 +81,7 @@ models:
       - name: author
         type: User
         isRelation: true
+        relationModel: User
       - name: createdAt
         type: DateTime
         isReadOnly: true
