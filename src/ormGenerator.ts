@@ -1,48 +1,56 @@
 // src/ormGenerator.ts
 import { Schema, FieldDefinition } from "./interface";
 
+// 型とデフォルト値のマッピング
+const typeMappings: Record<string, { tsType: string; defaultValue: string }> = {
+    String: { tsType: 'string', defaultValue: "''" },
+    Int: { tsType: 'number', defaultValue: '0' },
+    Float: { tsType: 'number', defaultValue: '0' },
+    Boolean: { tsType: 'boolean', defaultValue: 'false' },
+    DateTime: { tsType: 'Timestamp', defaultValue: 'new Timestamp(0, 0)' },
+};
+
+// ヘルパー関数: コード行を追加（複数行に対応）
+function addLine(code: string[], line: string = '', indentLevel: number = 0) {
+    const indent = '  '.repeat(indentLevel);
+    const lines = line.split('\n');
+    lines.forEach(l => code.push(`${indent}${l}`));
+}
+
 // Enumの生成（TypeScript用）
 export function generateEnums(schema: Schema): string {
-    let enumsCode = `// Auto-generated Enums\n\n`;
-
+    const enumsCode: string[] = [`// Auto-generated Enums\n`];
     for (const enumName in schema.enums) {
-        enumsCode += `export enum ${enumName} {\n`;
+        addLine(enumsCode, `export enum ${enumName} {`, 0);
         schema.enums[enumName].forEach(value => {
-            enumsCode += `  ${value} = "${value}",\n`;
+            addLine(enumsCode, `${value} = "${value}",`, 1);
         });
-        enumsCode += `}\n\n`;
+        addLine(enumsCode, `}\n`, 0);
     }
-
-    return enumsCode;
+    return enumsCode.join('\n');
 }
 
 // ヘルパー関数: フィールドタイプに基づいてデフォルト値を取得
 function getDefaultValue(field: FieldDefinition, schema: Schema): string {
+    if (field.isList) {
+        return '[]';
+    }
+
     if (schema.enums[field.type]) {
         const enumValues = schema.enums[field.type];
         return `${field.type}.${enumValues[0]}`;
     }
 
-    switch (field.type) {
-        case 'String':
-            return `''`;
-        case 'Int':
-        case 'Float':
-            return `0`;
-        case 'Boolean':
-            return `false`;
-        case 'DateTime':
-            return `new Timestamp(0, 0)`;
-        default:
-            if (field.isRelation) {
-                if (field.isList) {
-                    return `[]`;
-                } else {
-                    return `null`;
-                }
-            }
-            return `null`; // その他の型は null に設定
+    const mapping = typeMappings[field.type];
+    if (mapping) {
+        return mapping.defaultValue;
     }
+
+    if (field.isRelation) {
+        return 'null';
+    }
+
+    return 'null';
 }
 
 // ヘルパー関数: フィールドから型を取得
@@ -52,210 +60,109 @@ function typeFromField(field: FieldDefinition, schema: Schema): string {
     if (schema.enums[field.type]) {
         baseType = field.type;
     } else {
-        switch (field.type) {
-            case 'String':
-                baseType = 'string';
-                break;
-            case 'Int':
-            case 'Float':
-                baseType = 'number';
-                break;
-            case 'Boolean':
-                baseType = 'boolean';
-                break;
-            case 'DateTime':
-                baseType = 'Timestamp';
-                break;
-            default:
-                if (field.isRelation) {
-                    baseType = 'string'; // リレーションはユニークキーをstringと仮定
-                } else {
-                    baseType = 'any';
-                }
-        }
+        baseType = typeMappings[field.type]?.tsType || (field.isRelation ? 'string' : 'any');
     }
 
-    if (field.isRelation) {
-        if (field.isList) {
-            return `${baseType}[]`;
-        } else {
-            return `${baseType} | null`;
-        }
-    } else {
-        if (field.isList) {
-            return `${baseType}[]`;
-        } else {
-            return baseType;
-        }
+    if (field.isList) {
+        baseType += '[]';
+    } else if (field.isRelation) {
+        baseType += ' | null';
     }
+
+    return baseType;
+}
+
+// ヘルパー関数: コンストラクタ引数を生成
+function generateConstructorArgs(fields: FieldDefinition[], schema: Schema): string[] {
+    return fields.map(field => {
+        let argType: string;
+
+        if (schema.enums[field.type]) {
+            argType = field.type;
+        } else {
+            argType = typeFromField(field, schema);
+        }
+
+        if (!field.isRequired) {
+            argType = `${typeFromField(field, schema)}`;
+            return `    ${field.name}?: ${argType}`;
+        }
+
+        return `    ${field.name}: ${argType}`;
+    });
 }
 
 // ORMコードの生成
 export function generateORMCode(schema: Schema): string {
-    let ormCode = `// Auto-generated ORM models\n`;
-
-    // 必要なインポート文を追加
-    ormCode += `import { FieldValue, Timestamp } from "@firebase/firestore";\n`;
-    ormCode += `import { JsonValue } from "type-fest";\n\n`;
-
-    // CollectionJson の定義を追加
-    ormCode += `export type CollectionJson<T> = {\n`;
-    ormCode += `  [P in keyof T extends string ? keyof T : never]: JsonValue | FieldValue;\n`;
-    ormCode += `};\n\n`;
-
-    // Enumsの生成
-    ormCode += generateEnums(schema);
+    const ormCode: string[] = [
+        `// Auto-generated ORM models`,
+        `import { FieldValue, Timestamp } from "@firebase/firestore";`,
+        `import { JsonValue } from "type-fest";\n`,
+        `export type CollectionJson<T> = {`,
+        `  [P in keyof T extends string ? keyof T : never]: JsonValue | FieldValue;`,
+        `};\n`,
+        generateEnums(schema),
+    ];
 
     schema.models.forEach(model => {
-        // クラス宣言
-        ormCode += `export class ${model.name} {\n`;
+        addLine(ormCode, `export class ${model.name} {`, 0);
 
         // プライベートフィールドの宣言
         model.fields.forEach(field => {
-            const type: string = typeFromField(field, schema);
-            ormCode += `  private readonly _${field.name}: ${type};\n`;
+            const type = typeFromField(field, schema);
+            addLine(ormCode, `private readonly _${field.name}: ${type};`, 1);
         });
 
-        ormCode += `\n`;
+        addLine(ormCode, '', 1);
 
         // コンストラクタの生成
-        ormCode += `  constructor(\n`;
-
-        // コンストラクタの引数リスト
-        const constructorArgs: string[] = [];
-        model.fields.forEach(field => {
-            let arg = '';
-
-            const type: string = typeFromField(field, schema);
-
-            if (field.isRelation) {
-                if (field.isList) {
-                    arg = `${field.name}: string[]`;
-                } else {
-                    arg = `${field.name}?: string | null`;
-                }
-            } else if (schema.enums[field.type]) {
-                arg = `${field.name}: ${field.type}`;
-            } else {
-                switch (field.type) {
-                    case 'String':
-                        arg = `${field.name}: string`;
-                        break;
-                    case 'Int':
-                    case 'Float':
-                        arg = `${field.name}: number`;
-                        break;
-                    case 'Boolean':
-                        arg = `${field.name}: boolean`;
-                        break;
-                    case 'DateTime':
-                        arg = `${field.name}: Timestamp`;
-                        break;
-                    default:
-                        arg = `${field.name}: any`;
-                }
-
-                if (!field.isRequired) {
-                    arg = `${field.name}?: ${type}`;
-                }
-            }
-
-            constructorArgs.push(`    ${arg}`);
-        });
-
-        ormCode += constructorArgs.join(',\n');
-        ormCode += `\n  ) {\n`;
+        addLine(ormCode, `constructor(`, 1);
+        const constructorArgs = generateConstructorArgs(model.fields, schema);
+        ormCode.push(constructorArgs.join(',\n'));
+        addLine(ormCode, `) {`, 1);
 
         // コンストラクタ内でのプロパティ初期化
         model.fields.forEach(field => {
-            if (field.isRequired) {
-                // 必須フィールドは直接代入
-                ormCode += `    this._${field.name} = ${field.name};\n`;
-            } else {
-                // オプションフィールドはデフォルト値を設定
-                if (field.isRelation) {
-                    if (field.isList) {
-                        ormCode += `    this._${field.name} = ${field.name} || [];\n`;
-                    } else {
-                        ormCode += `    this._${field.name} = ${field.name} ?? null;\n`;
-                    }
-                } else {
-                    if (schema.enums[field.type]) {
-                        ormCode += `    this._${field.name} = ${field.name} ?? ${getDefaultValue(field, schema)};\n`;
-                    } else {
-                        switch (field.type) {
-                            case 'String':
-                                if (field.isList) {
-                                    ormCode += `    this._${field.name} = ${field.name} || [];\n`;
-                                } else {
-                                    ormCode += `    this._${field.name} = ${field.name} ?? '';\n`;
-                                }
-                                break;
-                            case 'Int':
-                            case 'Float':
-                                if (field.isList) {
-                                    ormCode += `    this._${field.name} = ${field.name} || [];\n`;
-                                } else {
-                                    ormCode += `    this._${field.name} = ${field.name} ?? 0;\n`;
-                                }
-                                break;
-                            case 'Boolean':
-                                if (field.isList) {
-                                    ormCode += `    this._${field.name} = ${field.name} || [];\n`;
-                                } else {
-                                    ormCode += `    this._${field.name} = ${field.name} ?? false;\n`;
-                                }
-                                break;
-                            case 'DateTime':
-                                if (field.isList) {
-                                    ormCode += `    this._${field.name} = ${field.name} || [];\n`;
-                                } else {
-                                    ormCode += `    this._${field.name} = ${field.name} ?? new Timestamp(0, 0);\n`;
-                                }
-                                break;
-                            default:
-                                if (field.isList) {
-                                    ormCode += `    this._${field.name} = ${field.name} || [];\n`;
-                                } else {
-                                    ormCode += `    this._${field.name} = ${field.name} ?? null;\n`;
-                                }
-                        }
-                    }
-                }
-            }
+            const initializer = field.isRequired
+                ? `${field.name}`
+                : `${field.name} ?? ${getDefaultValue(field, schema)}`;
+            addLine(ormCode, `this._${field.name} = ${initializer};`, 2);
         });
 
-        ormCode += `  }\n\n`;
+        addLine(ormCode, `}`, 1);
+        addLine(ormCode, '', 1);
 
         // ゲッターの生成
         model.fields.forEach(field => {
-            const type: string = typeFromField(field, schema);
-            ormCode += `  get ${field.name}(): ${type} {\n`;
-            ormCode += `    return this._${field.name};\n`;
-            ormCode += `  }\n\n`;
+            const type = typeFromField(field, schema);
+            addLine(ormCode, `get ${field.name}(): ${type} {`, 1);
+            addLine(ormCode, `return this._${field.name};`, 2);
+            addLine(ormCode, `}\n`, 1);
         });
 
         // FirestoreDataConverter の生成
-        ormCode += `  public static firestoreConverter: FirestoreDataConverter<${model.name}> = {\n`;
-        ormCode += `    toFirestore(instance: ${model.name}): CollectionJson<${model.name}> {\n`;
-        ormCode += `      return {\n`;
+        addLine(ormCode, `public static firestoreConverter: FirestoreDataConverter<${model.name}> = {`, 1);
+        // toFirestore
+        addLine(ormCode, `toFirestore(instance: ${model.name}): CollectionJson<${model.name}> {`, 2);
+        addLine(ormCode, `return {`, 3);
         model.fields.forEach(field => {
-            ormCode += `        ${field.name}: instance.${field.name},\n`;
+            addLine(ormCode, `${field.name}: instance.${field.name},`, 4);
         });
-        ormCode += `      };\n`;
-        ormCode += `    },\n\n`;
-        ormCode += `    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ${model.name} {\n`;
-        ormCode += `      const data = snapshot.data(options);\n`;
-        ormCode += `      return new ${model.name}(\n`;
-        model.fields.forEach(field => {
-            ormCode += `        data.${field.name},\n`;
-        });
-        ormCode += `      );\n`;
-        ormCode += `    },\n`;
-        ormCode += `  };\n`;
+        addLine(ormCode, `};`, 3);
+        addLine(ormCode, `},\n`, 2);
 
-        ormCode += `}\n\n`;
+        // fromFirestore
+        addLine(ormCode, `fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ${model.name} {`, 2);
+        addLine(ormCode, `const data = snapshot.data(options);`, 3);
+        const constructorParams = model.fields.map(field => `data.${field.name},`).join('\n');
+        addLine(ormCode, `return new ${model.name}(`, 3);
+        addLine(ormCode, constructorParams, 4);
+        addLine(ormCode, `);`, 3);
+        addLine(ormCode, `},`, 2);
+
+        addLine(ormCode, `};`, 1);
+        addLine(ormCode, `}\n`);
     });
 
-    return ormCode;
+    return ormCode.join('\n');
 }
