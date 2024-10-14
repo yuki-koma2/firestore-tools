@@ -23,7 +23,7 @@ enums:
     - ARCHIVED
 
 models:
-  User:
+  UserCollection:
     fields:
       - name: id
         type: String
@@ -98,7 +98,7 @@ models:
         isList: false
         isRelation: false
         isReadOnly: false
-  Post:
+  PostCollection:
     fields:
       - name: id
         type: String

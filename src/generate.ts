@@ -1,5 +1,7 @@
 import { Schema } from "./interface";
 
+const AUTH_PROVIDERS = ['password', 'google.com'];
+
 export function generateCollectionRules(schema: Schema): string {
     let collectionRulesCode = ''
 
@@ -145,52 +147,66 @@ export function generateValidationFunctions(schema: Schema): string {
     return functionsCode
 }
 
+// ユニーク制約関数の生成
+function generateUniqueConstraintFunctions(): string {
+    return `
+        // ======= ユニーク制約のための関数 ==========
+        function checkUnique(field, value) {
+            return !exists(/databases/$(database)/documents/UniqueIndexes/$(field)/$(value));
+        }
+
+        function reserveUnique(field, value) {
+            return exists(/databases/$(database)/documents/UniqueIndexes/$(field)/$(value));
+        }
+    `;
+}
+
+function generateGlobalFunctions(): string {
+    return `
+        // ======= グローバル関数 ==========
+        function getRole(uid) {
+            return get(/databases/$(database)/documents/UserCollection/$(uid)).data.role;
+        }
+
+        function isAdminOrOperator(uid) {
+            return getRole(uid) == "ADMIN" || getRole(uid) == "OPERATOR";
+        }
+
+        function isAdmin(uid) {
+            return getRole(uid) == "ADMIN";
+        }
+
+        // foreign key チェック
+        function checkFK(documentId, collectionPath) {
+            return exists(/databases/$(database)/documents/$(collectionPath)/$(documentId));
+        }
+
+        // 認証ステータスチェック
+        function checkAuthenticationStatus(auth) {
+            return (
+                auth != null &&
+                auth.token.firebase.sign_in_provider in ${JSON.stringify(AUTH_PROVIDERS)} &&
+                auth.token.firebase.sign_in_provider != 'anonymous'
+            );
+        }
+
+        // Enumバリデーション
+        function validateEnum(field, enumValues) {
+            return enumValues.hasAny(e => e == field);
+        }
+    `;
+}
+
+
 export function generateFirestoreRules(schema: Schema): string {
-    let rules = `
+    return `
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ======= グローバル関数 ==========
-    function getRole(uid) {
-        return get(/databases/$(database)/documents/UserCollection/$(uid)).data.role;
-    }
+    ${generateGlobalFunctions()}
 
-    function isAdminOrOperator(uid) {
-        return getRole(uid) == "ADMIN" || getRole(uid) == "OPERATOR";
-    }
-
-    function isAdmin(uid) {
-        return getRole(uid) == "ADMIN";
-    }
-
-    // foreign key チェック
-    function checkFK(documentId, collectionPath) {
-        return exists(/databases/$(database)/documents/$(collectionPath)/$(documentId));
-    }
-
-    // 認証ステータスチェック
-    function checkAuthenticationStatus(auth) {
-        return (
-            auth != null &&
-            auth.token.firebase.sign_in_provider in ['password' , 'google.com'] &&
-            auth.token.firebase.sign_in_provider != 'anonymous'
-        );
-    }
-
-    // Enumバリデーション
-    function validateEnum(field, enumValues) {
-        return enumValues.hasAny(e => e == field);
-    }
-
-    // ======= ユニーク制約のための関数 ==========
-    function checkUnique(field, value) {
-        return !exists(/databases/$(database)/documents/UniqueIndexes/{field}/$(value));
-    }
-
-    function reserveUnique(field, value) {
-        return exists(/databases/$(database)/documents/UniqueIndexes/{field}/$(value));
-    }
+    ${generateUniqueConstraintFunctions()}
 
     // ======= コレクションごとのバリデーション関数 ==========
     ${generateValidationFunctions(schema)}
@@ -201,10 +217,10 @@ service cloud.firestore {
     // ======= ユニークインデックスコレクションのルール ==========
     match /UniqueIndexes/{field}/{value} {
       allow read: if false; // 読み取り禁止
-      allow write: if request.auth != null && request.auth.token.role == "ADMIN";
+      allow write: if request.auth != null && isAdmin(request.auth.uid);
     }
+
   }
 }
-`
-    return rules
+    `
 }

@@ -12,18 +12,6 @@ describe('Schema Generator', () => {
         parsedSchema = await parseSchema(sampleYAML);
     });
 
-    describe('generateFirestoreRules', () => {
-        it('should generate valid Firestore rules', () => {
-            const rules = generateFirestoreRules(parsedSchema);
-            expect(rules).toContain("rules_version = '2';");
-            expect(rules).toContain("service cloud.firestore {");
-            expect(rules).toContain("match /User/{documentId} {");
-            expect(rules).toContain("allow read: if checkAuthenticationStatus(request.auth);");
-            expect(rules).toContain("allow create: if checkAuthenticationStatus(request.auth) && isAdminOrOperator(request.auth.uid) && validateUserCreate(request.resource.data);");
-            expect(rules).toContain("allow update: if checkAuthenticationStatus(request.auth) && (request.auth.uid == resource.data.uid || isAdminOrOperator(request.auth.uid)) && validateUserUpdate(request.resource.data, resource.data);");
-            expect(rules).toContain("allow delete: if checkAuthenticationStatus(request.auth) && isAdmin(request.auth.uid);");
-        });
-    });
     it('should include unique constraint functions in Firestore rules', () => {
         const rules = generateFirestoreRules(parsedSchema);
         expect(rules).toContain('function checkUnique(field, value) {');
@@ -39,4 +27,23 @@ describe('Schema Generator', () => {
         expect(rules).toContain('function validateEnum(field, enumValues) {');
     });
 
+    it('should generate valid Firestore rules', () => {
+        const rules = generateFirestoreRules(parsedSchema);
+        expect(rules).toContain("rules_version = '2';");
+        expect(rules).toContain("service cloud.firestore {");
+        expect(rules).toContain("match /UserCollection/{documentId} {");
+        expect(rules).toContain("allow read: if checkAuthenticationStatus(request.auth);");
+        expect(rules).toContain("allow create: if checkAuthenticationStatus(request.auth) && isAdminOrOperator(request.auth.uid) && validateUserCollectionCreate(request.resource.data);");
+        expect(rules).toContain("allow update: if checkAuthenticationStatus(request.auth) && (request.auth.uid == resource.data.uid || isAdminOrOperator(request.auth.uid)) && validateUserCollectionUpdate(request.resource.data, resource.data);");
+        expect(rules).toContain("allow delete: if checkAuthenticationStatus(request.auth) && isAdmin(request.auth.uid);");
+    });
+
+    it('should include unique constraint functions in Firestore rules', () => {
+        const rules = generateFirestoreRules(parsedSchema);
+        expect(rules).toContain('function checkUnique(field, value) {');
+        expect(rules).toContain('function reserveUnique(field, value) {');
+        // Ensure the path uses $(field) instead of ${field}
+        expect(rules).toContain('exists(/databases/$(database)/documents/UniqueIndexes/$(field)/$(value))');
+        expect(rules).toContain('!exists(/databases/$(database)/documents/UniqueIndexes/$(field)/$(value))');
+    });
 });
