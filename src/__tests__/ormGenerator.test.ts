@@ -74,8 +74,8 @@ describe('ORM Generator', () => {
 
         it('should define CollectionJson type correctly', () => {
             const ormCode = generateORMCode(parsedSchema);
-            const expectedType = `export type CollectionJson<T> = {
-  [P in keyof T extends string ? keyof T : never]: JsonValue | FieldValue;
+            const expectedType = `export type CollectionJson<T extends Record<string, any>> = {
+  [P in keyof T]: JsonValue | FieldValue;
 };\n\n`;
             expect(ormCode).toContain(expectedType);
         });
@@ -331,7 +331,7 @@ describe('ORM Generator', () => {
                 const ormCode = generateORMCode(emptySchema);
                 expect(ormCode).toContain('import { FieldValue, Timestamp } from "@firebase/firestore";');
                 expect(ormCode).toContain('import { JsonValue } from "type-fest";');
-                expect(ormCode).toContain('export type CollectionJson<T> = {');
+                expect(ormCode).toContain('export type CollectionJson<T extends Record<string, any>> = {');
                 expect(ormCode).toContain('// Auto-generated Enums\n\n');
                 expect(ormCode).not.toContain('export class ');
             });

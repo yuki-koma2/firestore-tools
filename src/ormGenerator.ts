@@ -99,8 +99,8 @@ export function generateORMCode(schema: Schema): string {
     ormCode += `import { JsonValue } from "type-fest";\n\n`;
 
     // CollectionJson の定義を追加
-    ormCode += `export type CollectionJson<T> = {\n`;
-    ormCode += `  [P in keyof T extends string ? keyof T : never]: JsonValue | FieldValue;\n`;
+    ormCode += `export type CollectionJson<T extends Record<string, any>> = {\n`;
+    ormCode += `  [P in keyof T]: JsonValue | FieldValue;\n`;
     ormCode += `};\n\n`;
 
     // Enumsの生成
