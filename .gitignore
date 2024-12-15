@@ -8,3 +8,5 @@
 /lib/interface.js
 /lib/ormGenerator.js
 /lib/parseSchema.js
+/coverage/*
+
