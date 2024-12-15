@@ -89,3 +89,19 @@ models:
       - name: updatedAt
         type: DateTime
         isUpdatedAt: true
+
+indexes:
+  - collectionGroup: "User"
+    queryScope: "COLLECTION"
+    fields:
+      - fieldPath: "email"
+        order: "ASCENDING"
+      - fieldPath: "createdAt"
+        order: "DESCENDING"
+  - collectionGroup: "Post"
+    queryScope: "COLLECTION"
+    fields:
+      - fieldPath: "status"
+        order: "ASCENDING"
+      - fieldPath: "createdAt"
+        order: "DESCENDING"

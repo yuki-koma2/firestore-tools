@@ -78,8 +78,18 @@ async function main() {
         const ormCodePath = path.join(outputDirPath, 'orm.ts');
         fs.writeFileSync(ormCodePath, ormCode);
         console.log(`ORM code generated at "${ormCodePath}"`);
+
+        // Indexes JSONの生成
+        console.log('Generating Firestore indexes JSON...');
+        const indexesJson = {
+            indexes: parsedSchema.indexes,
+            fieldOverrides: []
+        };
+        const indexesJsonPath = path.join(outputDirPath, 'firestore.indexes.json');
+        fs.writeFileSync(indexesJsonPath, JSON.stringify(indexesJson, null, 2));
+        console.log(`Firestore indexes JSON generated at "${indexesJsonPath}"`);
     } catch (error) {
-        console.error('Error generating Firestore rules or ORM code:', error);
+        console.error('Error generating Firestore rules, ORM code, or indexes JSON:', error);
         process.exit(1);
     }
 }

@@ -40,8 +40,11 @@ export async function parseSchema(schema: string): Promise<Schema> {
         };
     });
 
+    const indexes = parsed.indexes || [];
+
     return {
         enums,
         models,
+        indexes,
     };
 }
