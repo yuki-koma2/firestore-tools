@@ -1,5 +1,27 @@
 # firestore-tools
 
+## Usage
+
+```bash
+pnpm run generate --input {inputYamlFile} --output ./outputDir
+```
+
+generateコマンドは、指定されたYAMLファイルを読み込み、Firestoreのデータベースに対応するコードを生成します。
+
+### Output
+
+- firestore.rules
+- firestore.indexes.json (未対応)
+- orm.ts
+- schema.ts  (未対応)
+- types.ts  (未対応)
+- utils.ts (未対応)
+- {collectionName}.ts (未対応)
+- {collectionName}.test.ts (未対応)
+- {collectionName}.spec.ts (未対応)
+- {collectionName}.mock.ts (未対応)
+- {collectionName}.mock.json (未対応)
+
 ## サンプルコードでの動かし方
 
 ```bash

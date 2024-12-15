@@ -1,12 +1,4 @@
 /node_modules/
-/lib/__tests__/ormGenerator.test.js
-/lib/__tests__/perseSchema.test.js
-/lib/__tests__/schemaGenerator.test.js
-/lib/__tests__/yaml.testData.js
-/lib/generate.js
-/lib/index.js
-/lib/interface.js
-/lib/ormGenerator.js
-/lib/parseSchema.js
+/lib/*
 /coverage/*
 
