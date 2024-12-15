@@ -1,4 +1,3 @@
-// インターフェースの定義
 export interface EnumDefinition {
     [enumName: string]: string[];
 }
@@ -22,7 +21,17 @@ export interface ModelDefinition {
     fields: FieldDefinition[];
 }
 
+export interface IndexDefinition {
+    collectionGroup: string;
+    queryScope: string;
+    fields: {
+        fieldPath: string;
+        order: string;
+    }[];
+}
+
 export interface Schema {
     enums: EnumDefinition;
     models: ModelDefinition[];
+    indexes?: IndexDefinition[];
 }
