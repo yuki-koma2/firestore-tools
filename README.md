@@ -1,6 +1,6 @@
 # firestore-tools
 
-## Usage
+## 使用方法
 
 ```bash
 pnpm run generate --input {inputYamlFile} --output ./outputDir
@@ -8,7 +8,7 @@ pnpm run generate --input {inputYamlFile} --output ./outputDir
 
 generateコマンドは、指定されたYAMLファイルを読み込み、Firestoreのデータベースに対応するコードを生成します。
 
-### Output
+### 出力
 
 - firestore.rules
 - firestore.indexes.json (未対応)
@@ -28,8 +28,7 @@ generateコマンドは、指定されたYAMLファイルを読み込み、Fires
 pnpm run generate --input ./sample/schema.yaml --output ./output
 ```
 
-
-## github action テストの実行
+## GitHub Actions テストの実行
 
 ```bash
 brew install act
@@ -55,3 +54,15 @@ sudo rm -rf /System/Volumes/Data/var/run/docker/*
 # ストレージ確認
 df -h
 ```
+
+## IssueとPRのテンプレート
+
+リポジトリに基本的なIssueとPRのテンプレートを追加しました。これらのテンプレートは、`.github`ディレクトリにあります。これらのテンプレートは、Issueの報告やプルリクエストの提出プロセスを効率化するのに役立ちます。
+
+### Issueテンプレート
+
+Issueテンプレートには、タイトル、説明、再現手順、期待される動作、実際の動作、スクリーンショット、追加のコンテキスト、環境、ラベル、チェックリストのセクションが含まれています。
+
+### PRテンプレート
+
+PRテンプレートには、タイトル、説明、関連するIssue、変更の種類、チェックリスト、追加のコンテキストのセクションが含まれています。
