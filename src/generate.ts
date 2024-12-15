@@ -1,4 +1,5 @@
 import { Schema } from "./interface";
+import { indentHelper } from "./indentHelper";
 
 const AUTH_PROVIDERS = ['password', 'google.com'];
 
@@ -18,134 +19,129 @@ export function generateCollectionRules(schema: Schema): string {
 }
 
 export function generateValidationFunctions(schema: Schema): string {
-    let functionsCode = ''
+    let functionsCode = '';
 
-    // 各モデルごとのバリデーション関数を生成
     schema.models.forEach(model => {
         // Create用バリデーション関数
         functionsCode += `    function validate${model.name}Create(data) {\n`
-        let createValidations: string[] = []
+        let createValidations: string[] = [];
 
         model.fields.forEach(field => {
-            let validation = ''
+            let validation = '';
 
             if (field.isReadOnly) {
-                // Read-Onlyフィールドは作成時に設定可能
-                validation += `        data.${field.name} != null && `
+                validation += `data.${field.name} != null`; // 例: create時 read-only フィールドも null でないかどうか
             } else {
-                // 必須フィールドのチェック
                 if (field.isRequired) {
-                    validation += `        data.${field.name} != null && `
+                    validation += `data.${field.name} != null && `;
                 } else {
-                    validation += `        (data.${field.name} == null || `
+                    validation += `(data.${field.name} == null || `;
                 }
-            }
 
-            // 型チェック
-            switch (field.type) {
-                case 'String':
-                    validation += `data.${field.name} is string`
-                    if (field.constraints && field.constraints.maxLength) {
-                        validation += ` && data.${field.name}.size() <= ${field.constraints.maxLength}`
-                    }
-                    break
-                case 'Int':
-                case 'Float':
-                    validation += `data.${field.name} is number`
-                    break
-                case 'Boolean':
-                    validation += `data.${field.name} is bool`
-                    break
-                case 'DateTime':
-                    validation += `data.${field.name} is timestamp`
-                    break
-                default:
-                    if (schema.enums[field.type]) {
-                        validation += `validateEnum(data.${field.name}, [${schema.enums[field.type].map(v => `"${v}"`).join(', ')}])`
-                    } else if (field.isRelation && field.relationModel) {
-                        // リファレンスチェック
-                        validation += `data.${field.name} is string && checkFK(data.${field.name}, "${field.relationModel}Collection")`
-                    } else {
-                        validation += `true` // その他の型は基本チェックのみ
-                    }
-            }
+                // 型チェック部分
+                switch (field.type) {
+                    case 'String':
+                        validation += `data.${field.name} is string`;
+                        if (field.constraints && field.constraints.maxLength) {
+                            validation += ` && data.${field.name}.size() <= ${field.constraints.maxLength}`;
+                        }
+                        break;
+                    case 'Int':
+                    case 'Float':
+                        validation += `data.${field.name} is number`;
+                        break;
+                    case 'Boolean':
+                        validation += `data.${field.name} is bool`;
+                        break;
+                    case 'DateTime':
+                        validation += `data.${field.name} is timestamp`;
+                        break;
+                    default:
+                        if (schema.enums[field.type]) {
+                            validation += `validateEnum(data.${field.name}, [${schema.enums[field.type].map(v => `"${v}"`).join(', ')}])`;
+                        } else if (field.isRelation && field.relationModel) {
+                            validation += `data.${field.name} is string && checkFK(data.${field.name}, "${field.relationModel}Collection")`;
+                        } else {
+                            validation += `true`;
+                        }
+                }
 
-            // 必須フィールドでない場合の閉じ括弧
-            if (!field.isRequired) {
-                validation += `)`
+                if (!field.isRequired) {
+                    validation += `)`;
+                }
             }
 
             // ユニーク制約のチェック
             if (field.isUnique) {
-                validation += ` && checkUnique("${model.name}.${field.name}", data.${field.name})`
+                validation += ` && checkUnique("${model.name}.${field.name}", data.${field.name})`;
             }
 
-            createValidations.push(validation)
-        })
+            createValidations.push(validation);
+        });
 
-        // 全てのフィールドのチェックをANDで繋ぐ
-        functionsCode += `        return ${createValidations.join(' && ')};\n`
-        functionsCode += `    }\n\n`
+        // チェック式を行単位で結合する
+        functionsCode += `        return (\n`;
+        createValidations.forEach((v, i) => {
+            const isLast = i === createValidations.length - 1;
+            functionsCode += `            ${v}${isLast ? '' : ' &&'}\n`;
+        });
+        functionsCode += `        );\n    }\n\n`;
 
         // Update用バリデーション関数
         functionsCode += `    function validate${model.name}Update(data, existingData) {\n`
-        let updateValidations: string[] = []
+        let updateValidations: string[] = [];
 
         model.fields.forEach(field => {
             if (field.isReadOnly) {
-                // Read-Onlyフィールドが変更されていないことを確認
-                updateValidations.push(`        data.${field.name} == existingData.${field.name}`)
+                updateValidations.push(`data.${field.name} == existingData.${field.name}`);
             } else {
-                // 更新可能フィールドのバリデーション
-                let validation = `        (data.${field.name} == null || `
-
-                // 型チェック
+                let validation = `(data.${field.name} == null || `;
                 switch (field.type) {
                     case 'String':
-                        validation += `data.${field.name} is string`
+                        validation += `data.${field.name} is string`;
                         if (field.constraints && field.constraints.maxLength) {
-                            validation += ` && data.${field.name}.size() <= ${field.constraints.maxLength}`
+                            validation += ` && data.${field.name}.size() <= ${field.constraints.maxLength}`;
                         }
-                        break
+                        break;
                     case 'Int':
                     case 'Float':
-                        validation += `data.${field.name} is number`
-                        break
+                        validation += `data.${field.name} is number`;
+                        break;
                     case 'Boolean':
-                        validation += `data.${field.name} is bool`
-                        break
+                        validation += `data.${field.name} is bool`;
+                        break;
                     case 'DateTime':
-                        validation += `data.${field.name} is timestamp`
-                        break
+                        validation += `data.${field.name} is timestamp`;
+                        break;
                     default:
                         if (schema.enums[field.type]) {
-                            validation += `validateEnum(data.${field.name}, [${schema.enums[field.type].map(v => `"${v}"`).join(', ')}])`
+                            validation += `validateEnum(data.${field.name}, [${schema.enums[field.type].map(v => `"${v}"`).join(', ')}])`;
                         } else if (field.isRelation && field.relationModel) {
-                            // リファレンスチェック
-                            validation += `data.${field.name} is string && checkFK(data.${field.name}, "${field.relationModel}Collection")`
+                            validation += `data.${field.name} is string && checkFK(data.${field.name}, "${field.relationModel}Collection")`;
                         } else {
-                            validation += `true` // その他の型は基本チェックのみ
+                            validation += `true`;
                         }
                 }
+                validation += `)`;
 
-                validation += `)`
-
-                // ユニーク制約のチェック
                 if (field.isUnique) {
-                    validation += ` && checkUnique("${model.name}.${field.name}", data.${field.name})`
+                    validation += ` && checkUnique("${model.name}.${field.name}", data.${field.name})`;
                 }
-
-                updateValidations.push(validation)
+                updateValidations.push(validation);
             }
-        })
+        });
 
-        // 全てのフィールドのチェックをANDで繋ぐ
-        functionsCode += `        return ${updateValidations.join(' && ')};\n`
-        functionsCode += `    }\n\n`
-    })
+        functionsCode += `        return (\n`;
+        updateValidations.forEach((v, i) => {
+            const isLast = i === updateValidations.length - 1;
+            functionsCode += `            ${v}${isLast ? '' : ' &&'}\n`;
+        });
+        functionsCode += `        );\n    }\n\n`;
+    });
 
-    return functionsCode
+    return functionsCode;
 }
+
 
 // ユニーク制約関数の生成
 function generateUniqueConstraintFunctions(): string {
@@ -199,22 +195,26 @@ function generateGlobalFunctions(): string {
 
 
 export function generateFirestoreRules(schema: Schema): string {
+    const globalFunctionsCode = indentHelper(generateGlobalFunctions(), 4);
+    const uniqueConstraintFunctionsCode = indentHelper(generateUniqueConstraintFunctions(), 4);
+    const validationFunctionsCode = indentHelper(generateValidationFunctions(schema), 4);
+    const collectionRulesCode = indentHelper(generateCollectionRules(schema), 4);
     return `
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    ${generateGlobalFunctions()}
+${globalFunctionsCode}
 
-    ${generateUniqueConstraintFunctions()}
+${uniqueConstraintFunctionsCode}
 
-    // ======= コレクションごとのバリデーション関数 ==========
-    ${generateValidationFunctions(schema)}
+// ======= コレクションごとのバリデーション関数 ==========
+${validationFunctionsCode}
 
-    // ======= コレクションのルール ==========
-    ${generateCollectionRules(schema)}
+// ======= コレクションのルール ==========
+${collectionRulesCode}
 
-    // ======= ユニークインデックスコレクションのルール ==========
+// ======= ユニークインデックスコレクションのルール ==========
     match /UniqueIndexes/{field}/{value} {
       allow read: if false; // 読み取り禁止
       allow write: if request.auth != null && isAdmin(request.auth.uid);
@@ -222,5 +222,5 @@ service cloud.firestore {
 
   }
 }
-    `
+`;
 }
