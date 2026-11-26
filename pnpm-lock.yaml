@@ -7,7 +7,7 @@ settings:
 dependencies:
   fs-extra:
     specifier: ^11.2.0
-    version: 11.2.0
+    version: 11.4.1
   minimist:
     specifier: ^1.2.8
     version: 1.2.8
@@ -1064,7 +1064,7 @@ packages:
       '@jest/types': 29.6.3
       chalk: 4.1.2
       exit: 0.1.2
-      graceful-fs: 4.2.11
+      graceful-fs: 4.2.12
       jest-config: 29.7.0(@types/node@22.7.5)(ts-node@10.9.2)
       jest-util: 29.7.0
       prompts: 2.4.2
@@ -1235,12 +1235,12 @@ packages:
       path-exists: 4.0.0
     dev: true
 
-  /fs-extra@11.2.0:
-    resolution: {integrity: sha512-PmDi3uwK5nFuXh7XDTlVnS17xJS7vW36is2+w3xcv8SVxiB4NyATf4ctkVY5bkSjX0Y4nbvZCq1/EjtEyr9ktw==}
+  /fs-extra@11.4.1:
+    resolution: {integrity: sha512-KYAb4c9BJQI6QqGKthV68OHe0badztdXJWKo0WtBA9IuCFPTKvE5ZdUBglP833aMjhaSPNO4A5j/EkzZtGlKjA==}
     engines: {node: '>=14.14'}
     dependencies:
-      graceful-fs: 4.2.11
-      jsonfile: 6.1.0
+      graceful-fs: 4.2.12
+      jsonfile: 6.2.1
       universalify: 2.0.1
     dev: false
 
@@ -1306,6 +1306,10 @@ packages:
 
   /graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
+    dev: true
+
+  /graceful-fs@4.2.12:
+    resolution: {integrity: sha512-iuyGF2E4oafQfPsRrG2wtY2ILupMhvtdrhzrxB+0VcjsPpSPttpfYdjnGFGsTi5MaJFjI1jOKHPQ6UTbTj9TAw==}
 
   /has-flag@3.0.0:
     resolution: {integrity: sha512-sKJf1+ceQBr4SMkvQnBDNDtf4TXpVhVGateu0t918bl30FnbE2m4vNLX+VWe/dpjlb+HugGYzW7uQXH98HPEYw==}
@@ -1684,7 +1688,7 @@ packages:
       '@jest/types': 29.6.3
       '@types/stack-utils': 2.0.3
       chalk: 4.1.2
-      graceful-fs: 4.2.11
+      graceful-fs: 4.2.12
       micromatch: 4.0.8
       pretty-format: 29.7.0
       slash: 3.0.0
@@ -1816,7 +1820,7 @@ packages:
       babel-preset-current-node-syntax: 1.1.0(@babel/core@7.26.0)
       chalk: 4.1.2
       expect: 29.7.0
-      graceful-fs: 4.2.11
+      graceful-fs: 4.2.12
       jest-diff: 29.7.0
       jest-get-type: 29.6.3
       jest-matcher-utils: 29.7.0
@@ -1837,7 +1841,7 @@ packages:
       '@types/node': 22.7.5
       chalk: 4.1.2
       ci-info: 3.9.0
-      graceful-fs: 4.2.11
+      graceful-fs: 4.2.12
       picomatch: 2.3.1
     dev: true
 
@@ -1926,12 +1930,12 @@ packages:
     hasBin: true
     dev: true
 
-  /jsonfile@6.1.0:
-    resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
+  /jsonfile@6.2.1:
+    resolution: {integrity: sha512-zwOTdL3rFQ/lRdBnntKVOX6k5cKJwEc1HdilT71BWEu7J41gXIB2MRp+vxduPSwZJPWBxEzv4yH1wYLJGUHX4Q==}
     dependencies:
       universalify: 2.0.1
     optionalDependencies:
-      graceful-fs: 4.2.11
+      graceful-fs: 4.2.12
     dev: false
 
   /kleur@3.0.3:
